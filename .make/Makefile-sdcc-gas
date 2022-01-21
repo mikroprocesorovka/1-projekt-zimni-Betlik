@@ -33,7 +33,7 @@ ifeq ($(OS),Windows_NT)
 	CC_ROOT = "/c/Program Files/SDCC"
 	CC = $(CC_ROOT)/bin/sdcc
 	LN = cp
-	OPENOCD = openocd  -f interface/stlink.cfg -f target/stm8s.cfg
+	OPENOCD = openocd  -f scripts/interface/stlink.cfg -f scripts/target/stm8s.cfg
 else
     uname_S := $(shell uname -s)
 
@@ -53,7 +53,7 @@ CFLAGS += -D F_CPU=$(F_CPU)
 CFLAGS += --debug
 
 LD = stm8-ld
-LD_FLAGS = -T.make/elf32$(DEVICE_FLASH).x --print-memory-usage --gc-sections -Map $(OUTPUT_DIR)/map_$(DEVICE).map
+LD_FLAGS = -T.make/elf32stm8s003f3.x --print-memory-usage --gc-sections -Map $(OUTPUT_DIR)/map_$(DEVICE).map
 LIB_DIRS = $(addprefix -L, /usr/local/share/sdcc/lib/stm8)
 
 #AS = stm8-as
@@ -70,7 +70,6 @@ PRJ_INC_DIR = $(PRJ_ROOT)/inc
 # all project sources included by default
 PRJ_SOURCE  = $(notdir $(wildcard $(PRJ_SRC_DIR)/*.c))
 PRJ_OBJECTS := $(addprefix $(OUTPUT_DIR)/, $(PRJ_SOURCE:.c=.o))
-PRJ_INCS  = $(wildcard $(PRJ_INC_DIR)/*.h)
 
 # set SPL paths
 #SPL_SRC_DIR = /usr/local/lib/stm8/src/
@@ -87,7 +86,6 @@ SPL_OBJECTS := $(addprefix $(OUTPUT_DIR)/, $(SPL_SOURCE:.c=.o))
 
 SDCC_LIB_SRC_DIR = $(CC_ROOT)/share/sdcc/lib/src/
 SDCC_LIB_SOURCE = _mullong.c _divulong.c _mulint.c _modsint.c
-SDCC_LIB_SOURCE += printf_large.c _strlen.c sprintf.c vprintf.c puts.c
 #SDCC_LIB_SOURCE  = $(notdir $(wildcard $(CC_ROOT)/share/sdcc/lib/src/_*.c))
 SDCC_LIB_OBJECTS := $(addprefix $(OUTPUT_DIR)/, $(SDCC_LIB_SOURCE:.c=.o))
 
@@ -120,7 +118,7 @@ $(TARGET).ihx: $(TARGET).elf
 	@echo
 
 
-$(OUTPUT_DIR)/%.d: %.c $(PRJ_INCS) Makefile | $(OUTPUT_DIR)
+$(OUTPUT_DIR)/%.d: %.c Makefile | $(OUTPUT_DIR)
 	$(CC) -c $< $(CFLAGS) -D$(DEVICE) $(INCLUDE) -MM > $@
 
 $(OUTPUT_DIR)/%.o: %.c $(OUTPUT_DIR)/%.d
@@ -156,13 +154,13 @@ openocd::
 debug: $(TARGET).elf
 	stm8-gdb --tui $^
 
-switch-sdcc::
-	$(LN) .make/Makefile-sdcc Makefile || $(CP) .make/Makefile-sdcc Makefile
+switch-sdcc:
+	$(LN) .make/Makefile-sdcc     Makefile
+switch-sdcc-gas:
+	$(LN) .make/Makefile-sdcc-gas Makefile
 switch-sdccrm:
-	$(LN) .make/Makefile-sdccrm Makefile || $(CP) .make/Makefile-sdccrm Makefile
+	$(LN) .make/Makefile-sdccrm Makefile
 
-spl::
-	bash .make/spl.sh
 
 .PHONY: clean debug
 
