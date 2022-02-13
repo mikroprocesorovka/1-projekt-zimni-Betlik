@@ -15,6 +15,13 @@
 #define LED_HIGH   GPIO_WriteHigh(LED_PORT, LED_PIN)
 #define LED_LOW  GPIO_WriteLow(LED_PORT, LED_PIN)
 #define LED_TOGG GPIO_WriteReverse(LED_PORT, LED_PIN)
+
+
+#define LEDa_PORT GPIOG
+#define LEDa_PIN  GPIO_PIN_6
+#define LEDa_HIGH   GPIO_WriteHigh(LEDa_PORT, LEDa_PIN)
+#define LEDa_LOW  GPIO_WriteLow(LEDa_PORT, LEDa_PIN)
+#define LEDa_TOGG GPIO_WriteReverse(LEDa_PORT, LEDa_PIN)
 /////////////////////////////////////////////////////////////////////////////// stepper motor 
 #define A1_PORT GPIOF
 #define A1_PIN  GPIO_PIN_7
@@ -40,9 +47,9 @@
 #define A4_LOW  GPIO_WriteLow(A4_PORT, A4_PIN)
 #define A4_R GPIO_WriteReverse(A4_PORT, A4_PIN)
 ////////////////////////////////////////////////////////////////////////////////
-#define BTN_PORT GPIOE
-#define BTN_PIN  GPIO_PIN_4
-#define BTN_PUSH (GPIO_ReadInputPin(BTN_PORT, BTN_PIN)==RESET) 
+#define BTN_PORT GPIOG
+#define BTN_PIN  GPIO_PIN_7
+#define BTN_PUSH (GPIO_ReadInputPin(BTN_PORT, BTN_PIN)) 
 
 void delay_ms(uint16_t ms) {
     uint16_t  i;
@@ -53,6 +60,25 @@ void delay_ms(uint16_t ms) {
         _delay_us(250);
     }
 }
+
+void tim2_setup(void){
+     TIM2_TimeBaseInit(TIM2_PRESCALER_8, 40000); 
+    //TIM2_ITConfig(TIM2_IT_UPDATE, ENABLE);
+    TIM2_OC1Init(                // inicializujeme kanál 1 (TM2_CH1)
+        TIM2_OCMODE_PWM1,        // režim PWM1
+        TIM2_OUTPUTSTATE_ENABLE, // Výstup povolen (TIMer ovládá pin)
+        3000,                    // výchozí hodnota šířky pulzu (střídy) 1056/1600 = 66%
+        TIM2_OCPOLARITY_HIGH      // Polarita LOW protože LED rozsvěcím 0 (spol. anoda)
+     );
+
+
+     TIM2_OC1PreloadConfig(ENABLE);
+
+     TIM2_Cmd(ENABLE);
+}
+
+
+
 
 void ADC_init(void){
 // na pinech/vstupech ADC_IN2 (PB2) a ADC_IN3 (PB3) vypneme vstupní buffer
@@ -70,35 +96,37 @@ ADC2_Cmd(ENABLE);
 ADC2_Startup_Wait();
 }
 
-void TIM2_setup(void){
-    TIM2_DeInit();
-    TIM2_TimeBaseInit(TIM2_PRESCALER_1, 640 - 1);//25kHz    
-    TIM2_OC1Init(TIM2_OCMODE_PWM1, TIM2_OUTPUTSTATE_ENABLE, 200, TIM2_OCPOLARITY_LOW);
-    TIM2_Cmd(ENABLE);
 
-}
 
 void setup(void)
 {
     CLK_HSIPrescalerConfig(CLK_PRESCALER_HSIDIV1);      // taktovani MCU na 16MHz
 
     GPIO_Init(LED_PORT, LED_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
+    GPIO_Init(LEDa_PORT, LEDa_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
 
     GPIO_Init(A1_PORT, A1_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
     GPIO_Init(A2_PORT, A2_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
     GPIO_Init(A3_PORT, A3_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
     GPIO_Init(A4_PORT, A4_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
+    GPIO_Init(GPIOB, GPIO_PIN_4,GPIO_MODE_IN_FL_NO_IT);
+
     
+    
+    tim2_setup();
+
     init_milis();
     ADC_init();
-    TIM2_setup();
+
+    
  
 }
 
 int main(void)
 {
     uint32_t time = 0;
-    uint32_t cum = 1;
+    uint32_t ss = 0;
+    uint32_t cum = 3000;
     //init();
     uint16_t adc_valuex;
     uint16_t adc_valuey;
@@ -107,7 +135,7 @@ int main(void)
     init_uart();
 
     while (1) {
-
+        
         //printf("2𓆏\r\n");
         adc_valuex = ADC_get(ADC2_CHANNEL_2); // do adc_value ulož výsledek převodu vstupu ADC_IN2 (PB2)
         adc_valuey = ADC_get(ADC2_CHANNEL_3);
@@ -118,7 +146,7 @@ int main(void)
         //printf("\r\n");
 
         if (adc_valuex > 1000) {
-            printf("  RIGHT ");  
+            printf("  LEFT "); 
                   
             //1 step
             A1_HIGH;             
@@ -139,7 +167,7 @@ int main(void)
 
         }
         if (adc_valuex < 500) {
-            printf("  LEFT "); 
+            printf("  RIGHT "); 
 
             //1 step
             A4_HIGH;             
@@ -160,14 +188,31 @@ int main(void)
 
         }
         if (adc_valuey < 500) {
-            printf("  UP ");   
+            printf("  DOWN ");  
 
+            TIM2_SetCompare1(cum);
+            if (cum < 5000) {
+            cum += 2;
+            }
 
         }
         if (adc_valuey > 1000) {
-            printf("  DOWN ");
-              
-     
+            printf("  UP ");
+
+            TIM2_SetCompare1(cum);
+            if (cum > 1000) {
+            cum -= 2;
+            }
+        }
+
+        if( BTN_PUSH){ 
+            if (ss){
+            LEDa_TOGG; 
+            ss = 0;
+            }
+        }   
+        else{ 
+            ss = 1; 
         }
         printf("\r\n");
 

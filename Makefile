@@ -148,6 +148,9 @@ rebuild::
 reflash::
 	make clean
 	make flash
+cum::
+	make flash
+	
 
 openocd::
 	$(OPENOCD) -c "init" -c "reset halt"
