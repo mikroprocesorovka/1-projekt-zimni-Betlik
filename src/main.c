@@ -78,8 +78,6 @@ void tim2_setup(void){
 }
 
 
-
-
 void ADC_init(void){
 // na pinech/vstupech ADC_IN2 (PB2) a ADC_IN3 (PB3) vypneme vstupní buffer
 ADC2_SchmittTriggerConfig(ADC2_SCHMITTTRIG_CHANNEL2,DISABLE);
@@ -111,15 +109,9 @@ void setup(void)
     GPIO_Init(A4_PORT, A4_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
     GPIO_Init(GPIOB, GPIO_PIN_4,GPIO_MODE_IN_FL_NO_IT);
 
-    
-    
     tim2_setup();
-
     init_milis();
     ADC_init();
-
-    
- 
 }
 
 int main(void)
@@ -136,14 +128,11 @@ int main(void)
 
     while (1) {
         
-        //printf("2𓆏\r\n");
         adc_valuex = ADC_get(ADC2_CHANNEL_2); // do adc_value ulož výsledek převodu vstupu ADC_IN2 (PB2)
         adc_valuey = ADC_get(ADC2_CHANNEL_3);
 
-        //printf("x: ");
         printf("x:""%d",adc_valuex );
         printf("  y:""%d",adc_valuey );
-        //printf("\r\n");
 
         if (adc_valuex > 1000) {
             printf("  LEFT "); 
@@ -216,23 +205,6 @@ int main(void)
         }
         printf("\r\n");
 
-
-
-
-
-        /*
-        if (milis() - time > 333 && BTN_PUSH) {
-            LED_TOGG; 
-            time = milis();
-            
-            printf("                         2𓆏\r\n");
-            
-        }
-
-        //LED_TOGG; 
-        //delay_ms(333);
-        //printf("Funguje to!!!\n");
-        */
     }
 }
 
